@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>韩国价保工具</title>
+<style>
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 0; }
+.container { max-width: 1200px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+h1 { text-align: center; color: #007BFF; margin-bottom: 20px; }
+select, input[type="date"], button {
+    width: 100%; padding: 12px; margin-top: 10px;
+    border-radius: 8px; border: 1px solid #ccc; font-size: 15px;
+}
+button { background: #007BFF; color: white; font-size: 16px; border: none; cursor: pointer; margin-top: 16px; }
+button:hover { background: #0056b3; }
+.section { margin-top: 20px; padding: 15px; border-radius: 10px; }
+.section-title { font-weight: bold; margin-bottom: 10px; font-size: 16px; }
+.policy { background: #e3f2fd; border-left: 5px solid #2196f3; }
+.process { background: #fff3e0; border-left: 5px solid #fb8c00; }
+.reject { background: #fce4ec; border-left: 5px solid #d81b60; }
+.afterEvent { background: #ede7f6; border-left: 5px solid #7b1fa2; }
+label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }
+.custom-input-wrapper { background: #fafafa; border: 1px solid #ddd; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.03);}
+.custom-input-wrapper:hover { background: #f0f4f8; border-color: #bbb; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.custom-input-wrapper select, .custom-input-wrapper input[type="date"] { border: none; background: transparent; width: 100%; font-size: 15px; color: #333; }
+.custom-input-wrapper select:focus, .custom-input-wrapper input[type="date"]:focus { outline: none; }
+
+.top-buttons {
+  display: flex;
+  gap: 10px;
+}
+.top-buttons button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.btn-primary { background: #007BFF; color: white; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-warning { background: #ffc107; color: black; }
+.modal-overlay { position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;z-index:999; }
+.modal { background:#fff;padding:20px;border-radius:8px;width:500px;max-width:90%;box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+.modal-header { font-weight:bold;font-size:18px;margin-bottom:10px; }
+.close-btn { float:right;cursor:pointer;font-size:18px;margin-top:-4px; }
+
+</style>
+</head>
+<body>
+<div class="container">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1 style="margin:0;">가격 보장 도구</h1>
+    <div class="top-buttons">
+      <button class="btn-primary" onclick="showPriceProtection()">가격 보장 계획</button>
+      <button class="btn-secondary" onclick="showFAQ()">기타 시나리오 FAQ</button>
+      <button class="btn-warning" onclick="showException()">예외 처리 솔루션</button>
+    </div>
+  </div>
+<div id="pricePage" class="container" style="display:block;">
+  <label>제품을 선택하세요</label>
+  <div class="custom-input-wrapper">
+    <select id="product">
+      <option value="">선택해주세요</option>
+      <option value="OP3">Osmo Pocket 3</option>
+      <option value="OA5Pro">Osmo Action 5 Pro</option>
+      <option value="OQ">Osmo 360</option>
+    </select>
+  </div>
+  <label>구매 채널</label>
+  <div class="custom-input-wrapper">
+    <select id="channel">
+      <option value="">선택해주세요</option>
+      <option value="official">온라인 공식 스토어</option>
+      <option value="other">기타 채널</option>
+    </select>
+  </div>
+  <label>제품 수령일 다음 날</label>
+  <div class="custom-input-wrapper" onclick="document.getElementById('payDate').showPicker()">
+    <input type="date" id="payDate" lang="ko">
+  </div>
+  <label>가격보험 신청일 (현지시간)</label>
+  <div class="custom-input-wrapper" onclick="document.getElementById('applyDate').showPicker()">
+    <input type="date" id="applyDate" lang="ko">
+  </div>
+  <button onclick="checkPolicy()">보상 계획 확인하기</button>
+  <div id="output" style="display:none;"></div>
+</div>
+
+
+
+<div id="faqPage" class="container" style="display:none;">
+  <h1>기타 시나리오 FAQ</h1>
+  <label>장면을 선택하세요</label>
+  <select id="faqSelect" onchange="renderFAQContent()">
+    <option value="">선택해주세요</option>
+    <option value="logistics">상황 1: 고객이 악의적으로 언어로 비방하거나 모욕하여 정상적인 소통이 불가능할 경우, 아래의 안내 문구를 참고하여 예의 있게 통화를 종료하시기 바랍니다.</option>
+  </select>
+  <div id="faqContent" style="margin-top:15px;"></div>
+</div>
+
+<div id="exceptionPage" class="container" style="display:none;">
+  <h1>예외 처리 솔루션</h1>
+
+
+
+<!-- 场景选择 -->
+<label>상황을 선택하세요</label>
+<select id="exceptionScene">
+  <option value="">선택해주세요</option>
+  <option value="systemError">시스템 오류로 인해 고객이 프로모션(행사) 혜택을 받지 못한 경우</option>
+  <option value="paymentError">결제 오류로 인해 고객이 행사(프로모션) 혜택을 받지 못한 경우</option>
+</select>
+
+<!-- 问题选择 -->
+<label>문제를 선택하세요</label>
+<select id="exceptionIssue">
+  <option value="">선택해주세요</option>
+  <option value="priceDrop">
+    1. 즉시 할인 관련：고객이 행사 기간 중에 주문을 생성했으나, 행사가 종료된 이후 주문서에 표시된 결제 유효기간 내에서는 결제를 완료할 수 없는 상황입니다.(단, 은행 송금 방식은 정상 결제 가능)
+    고객은 행사 종료 후에도 프로모션 가격(행사가격)으로 구매를 요청하는 사례입니다.
+  </option>
+  <option value="giftMissing">
+    2. 증정 행사 관련：고객이 행사 기간 중에 주문을 생성했으나, 행사가 종료된 후 결제 유효기간 내에 결제를 진행할 수는 있지만, 결제 완료된 주문에는 사은품(증정품)이 포함되지 않은 상황입니다.
+    이에 고객이 사은품을 추가로 제공해 달라(보충 증정 요청) 고 요구하는 사례입니다.
+  </option>
+  <option value="paymentFail">
+    고객이 행사 기간 중 주문을 생성했으나, 신용카드 결제 승인 지연 또는 DJI 결제 시스템 오류 등 고객의 귀책이 아닌 사유로 인해 결제가 실패한 경우, 고객이 행사 가격(할인가) 또는 사은품 제공을 요청하는 사례입니다.
+  </option>
+</select>
+
+<div id="exceptionContent" style="margin-top:15px;"></div>
+<div id="grayTemplate" style="margin-top:15px;background:#eee;padding:10px;">[그레이드 템플릿 표시 영역]</div>
+
+<script>
+
+
+// FAQ 数据
+const faqData = {
+  logistics: "참고 안내 문구: X님, 저희는 고객님의 문제를 해결해 드리길 진심으로 원하지만, 지속적인 욕설 등 비문명적인 언행으로 인해 정상적인 상담이 어려운 점 양해 부탁드립니다. 다른 고객님의 대기 시간을 고려하여 현재 상담을 종료하겠습니다.추후 제품 사용이나 기술 문의와 관련하여 상담을 원하실 경우, 다시 연락해주시기 바랍니다. 이해해 주셔서 감사합니다."
+};
+
+// 异常处理方案数据
+const exceptionData = {
+  systemError: {
+    priceDrop: {
+      process: `아래 기간 내에 고객이 문의할 경우, 차액 또는 사은품 상당 금액에 해당하는 DJI 코인을 신청할 수 있습니다.<br>
+1. 일반 결제(신용카드·간편결제 등): 주문 후 3일 이내 문의 시 가능<br>
+2. 은행 송금 결제의 경우: 주문 후 30일 이내 문의 시 가능`,
+      script: `1. 행사 종료로 인해 상품이 정상가로 복귀되어 결제가 완료되지 못한 상황임을 고객에게 안내하고, 해당 건에 대해 DJI 크레딧 보상을 신청해드린다고 설명합니다.<br>
+【고객 응대 예시】안녕하세요, 고객님. 확인 결과 고객님의 주문 내에는 행사 상품(XXX)이 포함되어 있습니다. 현재 해당 행사가 종료되어 상품이 정상가로 복귀함에 따라, 결제가 정상적으로 완료되지 않은 것으로 확인됩니다. 고객님의 마음 충분히 이해하며, 해당 건은 상위 부서로 에스컬레이션하여 보상 신청을 최대한 도와드리겠습니다.<br>
+처리에 약 3~5분 정도 소요될 예정이오니 잠시만 기다려 주시기 바랍니다.<br><br>
+2. 고객에게 당일 재주문을 안내하고, 해당 차액에 상응하는 금액을 DJI 코인으로 보상해드립니다.<br>
+【고객 응대 예시】기다리시게 해서 죄송합니다, 고객님. DJI 공식 스토어를 늘 이용해 주시고 성원해 주신 점 진심으로 감사드립니다. 고객님의 상황을 고려하여, 저희가 특별히 상급자 승인하에 예외 지원을 요청드렸습니다.<br>
+오늘 안에 주문해 주신다면, 행사 가격과의 차액에 해당하는 DJI 코인(XX) 을 특별 보상으로 지급해드릴 수 있습니다. DJI 코인은 DJI 공식몰에서 배송비를 제외한 모든 상품 구매 시 사용 가능하며, 원활한 신청을 위해 주문 완료 후 주문번호를 알려주시면 바로 처리를 도와드리겠습니다. 고객님의 이해와 협조에 진심으로 감사드립니다.`,
+      gray: `예외 승인(Gray Zone) 권한：시스템 오류로 인해 고객이 할인 또는 사은품 혜택을 받지 못한 경우, XX 보상 방안을 제공합니다.\n신청자：XXX，승인자：XXX`
+    },
+    giftMissing: {
+      process: `주문 결제 시점에 행사가 이미 종료되어 결제가 정상적으로 진행되지 못한 상황임을 고객에게 설명하고, 해당 건에 대해 DJI 크레딧 보상 신청을 대신 진행해드린다고 안내합니다.`,
+      script: `【고객 응대 예시】안녕하세요, 고객님. 확인 결과 고객님께서 결제하신 시점에는 행사가 이미 종료되어 주문에 사은품이 포함되지 않은 것으로 확인됩니다.<br>
+고객님의 아쉬운 마음 충분히 이해합니다. 해당 건은 담당 부서로 에스컬레이션하여 사은품 제공 여부를 최대한 검토 및 신청해드리겠습니다.<br>
+처리에 약 3~5분 정도 소요될 예정이오니 잠시만 기다려 주시기 바랍니다.<br><br>
+2. 고객이 당일 안에 재주문하도록 안내하고, 사은품에 해당하는 금액만큼의 DJI 크레딧 을 보상으로 지급합니다.<br>
+【고객 응대 예시】기다리시게 해서 죄송합니다, 고객님. DJI 공식 스토어를 늘 이용해 주시고 성원해 주신 점 진심으로 감사드립니다.<br>
+고객님의 상황을 고려하여, 저희가 특별히 상급자 승인하에 예외 보상을 신청드렸습니다.<br>
+사은품에 해당하는 금액만큼의 DJI 크레딧(XX) 을 보상으로 지급해드릴 수 있습니다. DJI 크레딧은 DJI 공식몰에서 배송비를 제외한 모든 상품 구매 시 사용 가능합니다. 이 조건으로 진행해드려도 괜찮으실까요?`,
+      gray: `예외 승인(Gray Zone) 권한：시스템 오류로 인해 고객이 할인 또는 사은품 혜택을 받지 못한 경우, XX 보상 방안을 제공합니다.신청자：XXX，승인자：XXX`
+    }
+  },
+  paymentError: {
+    paymentFail: {
+      process: `고객의 기존 주문에 실제로 결제 오류가 있었음이 확인되고,결제 실패 후 3일 이내에 고객이 문의한 경우,<br>
+고객에게 정상(행사 전) 가격으로 재주문하도록 안내한 뒤 해당 차액 또는 사은품 금액에 상응하는 DJI 크레딧 을 신청할 수 있습니다.`,
+      script: `결제 승인 절차 지연 또는 DJI 시스템 오류 등, 고객의 귀책이 아닌 사유로 인해 주문이 실패한 것이 확인된 경우, 고객에게 당일 재주문을 안내하고 행사 가격과의 차액만큼 DJI 크레딧 을 보상으로 지급해드립니다.<br>
+【고객 응대 예시】기다리시게 해서 죄송합니다, 고객님. DJI 공식 스토어를 이용해 주시고 항상 성원해 주셔서 진심으로 감사드립니다. 고객님의 상황을 고려하여, 저희가 상급자 승인하에 특별히 예외 신청을 진행했습니다.<br>
+오늘 주문해 주신다면, 행사 가격과의 차액 또는 사은품에 해당하는 금액만큼의 DJI 크레딧 을 특별 보상으로 지급해드릴 수 있습니다.<br>
+DJI 크레딧 은 DJI 공식몰에서 배송비를 제외한 모든 상품 구매 시 사용 가능하며, 원활한 처리를 위해 주문 완료 후 주문번호를 알려주시면 바로 신청을 도와드리겠습니다. 고객님의 이해와 협조에 진심으로 감사드립니다.`,
+      gray: `예외 승인(Gray Zone) 권한：시스템 오류로 인해 고객이 할인 또는 사은품 혜택을 받지 못한 경우, XX 보상 방안을 제공합니다.신청자：XXX，승인자：XXX`
+    }
+  }
+};
+
+
+const productsConfig = {
+  OP3: { start: "2025-10-29", end: "2025-11-11" },
+  OA5Pro: { start: "2025-11-17", end: "2025-11-30" },
+  OQ: { start: "2025-10-29", end: "2025-11-11" }
+};
+
+const policies = {
+  official: {
+    within14: {
+      policy: `DJI 크레딧 보상 또는 현금 차액 환불`,
+      process: `두 가지 중 한 가지를 선택하세요:<br>
+1. 차액에 해당하는 DJI 크레딧을 제공합니다.<br>
+2. CRM 사례를 생성하여 차액(현금)만 환불해 드립니다.`,
+      script: `XXX님, 저희를 신뢰해 주셔서 감사합니다. 걱정하지 않으셔도 됩니다. 저희가 차액 상당의 DJI 크레딧 제공 또는 차액 환불을 도와드릴 수 있습니다. DJI 크레딧으로 받으시겠습니까, 아니면 현금 환불을 원하십니까?<br>
+보상 DJI 크레딧: DJI 크레딧은 배송 완료 후 약 15일 뒤에 활성화되며, DJI 공식 스토어에서 어떠한 상품(배송비 제외)도 구매하실 수 있습니다. 나중에 <a href="https://my.dji.com/credit" target="_blank">https://my.dji.com/credit</a> 에 방문하여 DJI 크레딧 잔액을 확인하실 수 있습니다.<br>
+현금 차액 환불: 차액은 2~7영업일 이내에 결제하신 계정으로 환불됩니다.<br>
+참고: 추후 반품이 발생할 경우, 반품 환불 시 DJI 크레딧 보상 또는 차액 부분이 차감됩니다.`,
+      reject: `/`,
+      afterEvent: `고객이 가격 보장을 요청하는 경우, 정중하게 요청을 거절하고 고객 불만으로 이관하여 위험을 분산시키십시오.<br>
+정중한 거절 1: 안녕하세요. 저희 제품을 이용해 주셔서 감사합니다. 고객님께서 말씀하신 가격 보장 문제는 충분히 이해합니다. 하지만 프로모션이 종료되었고 제품 가격이 변동되지 않았기 때문에 가격 보장은 제공되지 않습니다. 양해해 주셔서 죄송합니다.<br>
+정중한 거절 2: 프로모션이 종료되었으므로 현재 가격 보장 보상을 제공해 드릴 수 없습니다. 하지만 구매하신 제품에 대해서는 다른 고품질 서비스와 보장을 계속 제공해 드리겠습니다. 양해해 주셔서 감사합니다. 제품에 대한 문의 사항이 있으시면 언제든지 문의해 주시면 기꺼이 해결해 드리겠습니다.<br>
+다음과 같은 경우 고객 불만을 분산시킬 수 있습니다. (참고: 고객 이름, 전화번호 및 기타 정보를 수집하여 불만을 분산시키십시오. 불만 사항은 "전자상거래 - 프로모션 분쟁" 탭을 선택하십시오.)<br><div style=\"margin:1px 0;\"> <img src=\"https://terra-1-g.djicdn.com/eb222cbc4f4345e3a134199bab1f0894/61bb54346bfe417f9f5007159dc65663.png\" alt=\"门店类型一图片\" style=\"max-width:100%;height:auto;\"</div>`
+    },
+    day15to30: {
+      policy: `① 정중히 거절 / ② 그레이드 보상 DJI 크레딧 / ③ 반품 후 재구매`,
+      process: `1. 고객의 요청을 정중히 거절<br>
+2. 고객이 수용하지 않을 경우, 가격 인하 내역(sheet)을 참고하여 해당 보상을 제공합니다.<br>
+
+<a href="https://docs.djicorp.com/weboffice/l/s9wfDYh4kbdks" target="_blank">https://docs.djicorp.com/weboffice/l/s9wfDYh4kbdks</a>）。<br>
+<div style=\"margin:1px 0;\"> <img src=\"https://terra-1-g.djicdn.com/eb222cbc4f4345e3a134199bab1f0894/fb5cff81df4f48aa92309b30c4bfaf06.png\" alt=\"门店类型一图片\" style=\"max-width:100%;height:auto;\"</div>
+<br>3. 고객님께서 DJI 크레딧을 받지 않으실 경우, 반품 정책에 부합하면 상품을 반품하시고 재구매하실 수 있습니다.`,
+      script: `첫 번째 상담: 고객님의 마음을 충분히 이해합니다. 행사 가격 보장 기간이 이미 지난 상황이라 마음이 불편하실 수 있다는 점 잘 알고 있습니다. 확인 결과, 고객님의 주문이 가격 보장 정책 기간을 초과하여 요청을 도와드릴 수 없는 점 양해 부탁드립니다.<br><br>
+두 번째 상담: 고객님의 심정을 충분히 이해합니다. 이쪽에서 확인해보니, 주문 날짜는 XX입니다. 하지만 이 주문은 이미 이벤트 가격보장 기간을 지났기 때문에, 죄송하지만 가격보장 서비스를 제공해드릴 수 없습니다.<br><br>
+세 번째 예의 있는 통화 종료: 저희는 정말로 고객님의 문제 해결을 도와드리고 싶지만, 현재 고객님의 주문은 가격 보장 기간이 이미 만료되어 더 이상 가격 보호 서비스를 제공해드릴 수 없습니다. 최대한 노력하여 XXX DJI 크레딧을 제공해드렸습니다.`,
+      reject: `【처리 원칙】<br>
+1. 명확하게 악의적인 통화 점유(통화 점유≥15분) 상황이 확인될 경우, 아래의 절차와 커뮤니케이션 흐름에 따라 처리한 후, 예의 있게 통화 종료 프로세스를 진행합니다(사전에 TL 승인을 받아야 하며, TL 승인 후 https://docs.djicorp.com/weboffice/l/sd17qDgMfB0nA?linkname=1 에 등록해야 합니다).<br>
+2. 고객 불만 처리 기준 업그레이드:<br>
+가능한 한 무위험 상황은 사전에 차단하고, 안내 문구와 방안에 따라 가격 보호 원칙을 명확히 설명하여, 적용 가능 여부를 안내하고, 고객 불만으로 escalate하지 않습니다.<br>
+② 아래와 같은 상황에 해당할 경우, 고객 불만 사항을 상위 단계로 이관할 수 있습니다(참고: 고객의 성명, 전화번호 및 기타 정보를 수집하여 불만 접수 단계를 이관하고, 불만 유형 태그는 ‘이커머스-프로모션 분쟁’으로 선택해 주세요).<br>
+<div style=\"margin:1px 0;\"> <img src=\"https://terra-1-g.djicdn.com/eb222cbc4f4345e3a134199bab1f0894/61bb54346bfe417f9f5007159dc65663.png\" alt=\"门店类型一图片\" style=\"max-width:100%;height:auto;\"</div>
+【참고 화술】<br>
+첫 번째 상담: 고객님의 마음을 충분히 이해합니다. 행사 가격 보장 기간이 이미 지난 상황이라 마음이 불편하실 수 있다는 점 잘 알고 있습니다. 확인 결과, 고객님의 주문이 가격 보장 정책 기간을 초과하여 요청을 도와드릴 수 없는 점 양해 부탁드립니다.<br>
+두 번째로 안내드릴 때: 고객님의 심정을 충분히 이해합니다. 이쪽에서 확인해보니, 주문하신 날짜가 XX로 나옵니다. 제품을 미리 구매하셔서 더 많은 특별한 순간들을 기록하실 수 있었습니다. 하지만 이 주문은 이미 이벤트 가격보장 기간이 지났기 때문에, 죄송하지만 가격보장 서비스를 제공해드릴 수 없습니다.<br>
+세 번째 예의 있는 통화 종료: 저희는 정말로 고객님의 문제 해결을 도와드리고 싶지만, 현재 고객님의 주문은 가격 보장 기간이 경과되어 더 이상 가격 보장 서비스를 제공해드릴 수 없습니다. 최대한 노력하여 XXX DJI 크레딧을 제공해드렸으니, 너그럽게 양해해주시길 진심으로 부탁드립니다. 추후에도 다른 문의 사항이 있으시면 언제든지 저희에게 연락해 주시기 바랍니다. 더 이상 불편을 드리지 않겠습니다. 즐거운 하루 보내세요. 안녕히 계세요.<br>`,
+      afterEvent: `고객이 가격 보장을 요청하는 경우, 정중하게 요청을 거절하고 고객 불만으로 이관하여 위험을 분산시키십시오.<br>
+정중한 거절 1: 안녕하세요. 저희 제품을 이용해 주셔서 감사합니다. 고객님께서 말씀하신 가격 보장 문제는 충분히 이해합니다. 하지만 프로모션이 종료되었고 제품 가격이 변동되지 않았기 때문에 가격 보장은 제공되지 않습니다. 양해해 주셔서 죄송합니다.<br>
+정중한 거절 2: 프로모션이 종료되었으므로 현재 가격 보장 보상을 제공해 드릴 수 없습니다. 하지만 구매하신 제품에 대해서는 다른 고품질 서비스와 보장을 계속 제공해 드리겠습니다. 양해해 주셔서 감사합니다. 제품에 대한 문의 사항이 있으시면 언제든지 문의해 주시면 기꺼이 해결해 드리겠습니다.<br>
+다음과 같은 경우 고객 불만을 분산시킬 수 있습니다. (참고: 고객 이름, 전화번호 및 기타 정보를 수집하여 불만을 분산시키십시오. 불만 사항은 "전자상거래 - 프로모션 분쟁" 탭을 선택하십시오.)<br><div style=\"margin:1px 0;\"> <img src=\"https://terra-1-g.djicdn.com/eb222cbc4f4345e3a134199bab1f0894/61bb54346bfe417f9f5007159dc65663.png\" alt=\"门店类型一图片\" style=\"max-width:100%;height:auto;\"</div>`
+    },
+    over30: {
+      policy: `추가 발송 방안이 없습니다`,
+      process: `요청을 정중히 거절하며, 어떠한 추가 대안도 제공되지 않습니다.<br>위험 상황 발생 시 신속히 상위 부서로 에스컬레이션.`,
+      script: `첫 번째 안내: 고객님의 마음을 충분히 이해합니다. 행사 가격보장 기간을 너무 초과하여 서비스 제공이 불가능합니다.<br>
+두 번째 안내: 주문 날짜가 XX로 확인되며, 이미 이벤트 가격보장 기간을 오래 넘어 가격보장 서비스 제공이 불가합니다.<br>
+세 번째 종료: 더 이상 가격 보호가 불가능하므로 양해 부탁드립니다.`,
+      reject: `【처리 원칙】<br>
+1. 명확하게 악의적인 통화 점유(통화 점유≥15분) 상황이 확인될 경우, 아래의 절차와 커뮤니케이션 흐름에 따라 처리한 후, 예의 있게 통화 종료 프로세스를 진행합니다(사전에 TL 승인을 받아야 하며, TL 승인 후 <a href="https://docs.djicorp.com/weboffice/l/sd17qDgMfB0nA?linkname=1" target="_blank">https://docs.djicorp.com/weboffice/l/sd17qDgMfB0nA?linkname=1</a> 에 등록해야 합니다).<br>
+2. 고객 불만 처리 기준 업그레이드:<br>
+가능한 한 무위험 상황은 사전에 차단하고, 안내 문구와 방안에 따라 가격 보호 원칙을 명확히 설명하여, 적용 가능 여부를 안내하고, 고객 불만으로 escalate하지 않습니다.<br>
+② 아래와 같은 상황에 해당할 경우, 고객 불만 사항을 상위 단계로 이관할 수 있습니다(참고: 고객의 성명, 전화번호 및 기타 정보를 수집하여 불만 접수 단계를 이관하고, 불만 유형 태그는 ‘이커머스-프로모션 분쟁’으로 선택해 주세요).<br>
+<div style=\"margin:1px 0;\"> <img src=\"https://terra-1-g.djicdn.com/eb222cbc4f4345e3a134199bab1f0894/61bb54346bfe417f9f5007159dc65663.png\" alt=\"门店类型一图片\" style=\"max-width:100%;height:auto;\"</div>
+【참고 화술】<br>
+첫 번째 안내: XX님, 고객님의 마음을 충분히 이해합니다. 행사 가격보장 기간이 지난 상황이 불편하실 수 있다는 점 공감합니다. 확인 결과, 고객님의 주문이 가격보장 정책 기간을 너무 오래 넘어서 안타깝게도 가격보장 서비스나 차액 환급을 제공해 드릴 수 없습니다. 양해 부탁드립니다.<br>
+두 번째로 안내드릴 때: 고객님의 심정을 충분히 이해합니다. 이쪽에서 확인해보니, 주문하신 날짜가 XX로 나옵니다. 제품을 미리 구매하셔서 더 많은 특별한 순간들을 기록하실 수 있었습니다. 하지만 해당 주문은 이미 이벤트 가격보장 기간이 오래전에 경과되어, 안타깝게도 가격보장 서비스나 차액 환불을 제공해드릴 수 없습니다.<br>
+세 번째 정중한 종료 안내: 저희는 고객님의 문제 해결을 진심으로 돕고 싶습니다. 하지만 현재 고객님의 주문은 가격 보호 기간이 한참 지난 상태이므로, 더 이상 가격 보호 서비스를 제공해 드릴 수 없는 점 깊이 양해 부탁드립니다. 추후에도 다른 문의 사항이 있으시면 언제든지 저희에게 연락해 주시기 바랍니다. 더 이상 불편을 드리지 않겠습니다. 즐거운 하루 보내세요. 안녕히 계세요.<br>`,
+      afterEvent: `고객이 가격 보장을 요청하는 경우, 정중하게 요청을 거절하고 고객 불만으로 이관하여 위험을 분산시키십시오.<br>
+정중한 거절 1: 안녕하세요. 저희 제품을 이용해 주셔서 감사합니다. 고객님께서 말씀하신 가격 보장 문제는 충분히 이해합니다. 하지만 프로모션이 종료되었고 제품 가격이 변동되지 않았기 때문에 가격 보장은 제공되지 않습니다. 양해해 주셔서 죄송합니다.<br>
+정중한 거절 2: 프로모션이 종료되었으므로 현재 가격 보장 보상을 제공해 드릴 수 없습니다. 하지만 구매하신 제품에 대해서는 다른 고품질 서비스와 보장을 계속 제공해 드리겠습니다. 양해해 주셔서 감사합니다. 제품에 대한 문의 사항이 있으시면 언제든지 문의해 주시면 기꺼이 해결해 드리겠습니다.<br>
+다음과 같은 경우 고객 불만을 분산시킬 수 있습니다. (참고: 고객 이름, 전화번호 및 기타 정보를 수집하여 불만을 분산시키십시오. 불만 사항은 "전자상거래 - 프로모션 분쟁" 탭을 선택하십시오.)<br><div style=\"margin:1px 0;\"> <img src=\"https://terra-1-g.djicdn.com/eb222cbc4f4345e3a134199bab1f0894/61bb54346bfe417f9f5007159dc65663.png\" alt=\"门店类型一图片\" style=\"max-width:100%;height:auto;\"</div>`
+    },
+    endEvent: {
+      policy: `행사 종료 후 가격보호 불가`,
+      process: `정중히 거절 + 위험 상황 발생 시 에스컬레이션`,
+      script: `안내1: 행사 종료로 인해 가격보호가 불가합니다.<br>
+안내2: 행사 종료로 차액 보상 제공이 어려우나, 지속적으로 좋은 서비스를 제공하겠습니다.`,
+      reject: `【처리 원칙】<br>
+1. 명확하게 악의적인 통화 점유(통화 점유≥15분) 상황이 확인될 경우, 아래의 절차와 커뮤니케이션 흐름에 따라 처리한 후, 예의 있게 통화 종료 프로세스를 진행합니다(사전에 TL 승인을 받아야 하며, TL 승인 후 https://docs.djicorp.com/weboffice/l/sd17qDgMfB0nA?linkname=1 에 등록해야 합니다).<br>
+2. 고객 불만 처리 기준 업그레이드:<br>
+가능한 한 무위험 상황은 사전에 차단하고, 안내 문구와 방안에 따라 가격 보호 원칙을 명확히 설명하여, 적용 가능 여부를 안내하고, 고객 불만으로 escalate하지 않습니다.<br>
+② 아래와 같은 상황에 해당할 경우, 고객 불만 사항을 상위 단계로 이관할 수 있습니다(참고: 고객의 성명, 전화번호 및 기타 정보를 수집하여 불만 접수 단계를 이관하고, 불만 유형 태그는 ‘이커머스-프로모션 분쟁’으로 선택해 주세요).<br>
+<div style=\"margin:1px 0;\"> <img src=\"https://terra-1-g.djicdn.com/eb222cbc4f4345e3a134199bab1f0894/61bb54346bfe417f9f5007159dc65663.png\" alt=\"门店类型一图片\" style=\"max-width:100%;height:auto;\"</div>
+【참고 화술】<br>
+첫 번째 안내: XX님, 고객님의 마음을 충분히 이해합니다. 행사 가격보장 기간이 지난 상황이 불편하실 수 있다는 점 공감합니다. 확인 결과, 고객님의 주문이 가격보장 정책 기간을 너무 오래 넘어서 안타깝게도 가격보장 서비스나 차액 환급을 제공해 드릴 수 없습니다. 양해 부탁드립니다.<br>
+두 번째로 안내드릴 때: 고객님의 심정을 충분히 이해합니다. 이쪽에서 확인해보니, 주문하신 날짜가 XX로 나옵니다. 제품을 미리 구매하셔서 더 많은 특별한 순간들을 기록하실 수 있었습니다. 하지만 해당 주문은 이미 이벤트 가격보장 기간이 오래전에 경과되어, 안타깝게도 가격보장 서비스나 차액 환불을 제공해드릴 수 없습니다.<br>
+세 번째 정중한 종료 안내: 저희는 고객님의 문제 해결을 진심으로 돕고 싶습니다. 하지만 현재 고객님의 주문은 가격 보호 기간이 한참 지난 상태이므로, 더 이상 가격 보호 서비스를 제공해 드릴 수 없는 점 깊이 양해 부탁드립니다. 추후에도 다른 문의 사항이 있으시면 언제든지 저희에게 연락해 주시기 바랍니다. 더 이상 불편을 드리지 않겠습니다. 즐거운 하루 보내세요. 안녕히 계세요.<br>`,
+      afterEvent: ``
+    }
+  },
+  other: {
+    all: {
+      policy: `가격보장 불가(내부 참고용),고객이 구매처와 직접 소통하여 확인하시도록 안내해 주시기 바랍니다.`,
+      process: `다양한 채널의 가격 보호, 보상, 할인 등은 차이가 있을 수 있습니다. 고객님께서 해당 판매자와 직접 연락하여 확인해주셔야 합니다.`,
+      script: `안녕하세요, 확인 결과 고객님의 제품은 온라인 공식 스토어에서 구매하신 것이 아닙니다. 최상의 사후 서비스와 보장을 받으시려면 우선 판매자에게 문의 및 상담하실 것을 권장드립니다. 이해해 주셔서 감사합니다.`,
+      reject: `【처리 방안】<br>
+채널마다 프로모션 정책이 다를 수 있으므로, 고객이 판매자와 직접 소통하여 해결할 수 있도록 안내해 주시기 바랍니다.<br>
+가격 인하 및 가격 보장 문제와 관련하여 고객이 대리점에 대해 불만을 제기할 경우(예: 서비스 태도, 서비스 품질 등), 관련 정보를 수집하여 GT 전용 그룹【手持海外活动线上线下联动】에서 대리점 담당자에게 피드백해 주시기 바랍니다.<br>
+정보 수집 템플릿:<br>
+【대리점】：<br>
+【고객 구매 제품 모델】：<br>
+【제품 SN】：<br>
+【이름】：<br>
+【연락처】：전화/이메일<br>
+구매 증빙：<br>
+공식 스토어 가격 보호 관련 처리 기<br>
+1. 명확하게 악의적인 통화 점유(통화 점유≥15분) 상황이 확인될 경우, 아래의 절차와 커뮤니케이션 흐름에 따라 처리한 후, 예의 있게 통화 종료 프로세스를 진행합니다(사전에 TL 승인을 받아야 하며, TL 승인 후 <a href="https://docs.djicorp.com/weboffice/l/sd17qDgMfB0nA?linkname=1" target="_blank">https://docs.djicorp.com/weboffice/l/sd17qDgMfB0nA?linkname=1</a> 에 등록해야 합니다).<br>
+2. 고객 불만 처리 기준 업그레이드:<br>
+가능한 한 무위험 상황은 사전에 차단하고, 안내 문구와 방안에 따라 가격 보호 원칙을 명확히 설명하여, 적용 가능 여부를 안내하고, 고객 불만으로 escalate하지 않습니다.<br>
+② 아래와 같은 상황에 해당할 경우, 고객 불만 사항을 상위 단계로 이관할 수 있습니다(참고: 고객의 성명, 전화번호 및 기타 정보를 수집하여 불만 접수 단계를 이관하고, 불만 유형 태그는 ‘이커머스-프로모션 분쟁’으로 선택해 주세요).<br>
+<div style=\"margin:1px 0;\"> <img src=\"https://terra-1-g.djicdn.com/eb222cbc4f4345e3a134199bab1f0894/61bb54346bfe417f9f5007159dc65663.png\" alt=\"门店类型一图片\" style=\"max-width:100%;height:auto;\"</div>
+【참고 화술】<br>
+첫 번째 안내: XX님, 불편을 드려 죄송합니다. 확인해보니 고객님께서 온라인 공식 판매처가 아닌 다른 곳에서 제품을 구매하신 것으로 확인됩니다. 판매 경로에 따라 가격 보상이나 할인 등 프로모션 정책에 차이가 있을 수 있으니, 구체적인 사항은 판매자와 직접 상담해 주시기 바랍니다.<br>
+두 번째로 안내드릴 때: 먼저 판매자에게 연락하신 후, 담당 직원이 실제 상황에 맞춰 상담해 드릴 수 있도록 요청해 주세요. 저희도 고객님께서 문의하신 사항이 신속하게 처리되기를 바라므로, 판매자와 직접 연락하실 것을 권장드립니다. 이렇게 하면 고객님의 시간을 최대한 절약하실 수 있습니다.<br>
+세 번째로 정중히 전화를 마무리합니다: 고객님의 요청을 이해하며, 저희도 도움을 드리고 싶습니다. 하지만 비공식 채널에서 구매하신 제품에 대해서는 저희가 가격 보호 요청을 처리해드릴 수 없는 점 양해 부탁드립니다. 번거로우시겠지만 판매자와 직접 연락해 주시기 바랍니다. 추후에도 다른 문의 사항이 있으시면 언제든지 저희에게 연락해 주시기 바랍니다. 더 이상 불편을 드리지 않겠습니다. 즐거운 하루 보내세요. 안녕히 계세요.<br>`,
+      afterEvent: ``
+    }
+  }
+};
+
+function checkPolicy(){
+  const p = document.getElementById('product').value;
+  const c = document.getElementById('channel').value;
+  const pay = document.getElementById('payDate').value;
+  const apply = document.getElementById('applyDate').value;
+
+  if (!p || !c || !pay || !apply) {
+    alert("전체 정보를 선택해 주세요");
+    return;
+  }
+
+  const payDate = new Date(pay);
+  const applyDate = new Date(apply);
+
+  if (applyDate.getTime() < payDate.getTime()) {
+    alert("가격보험 신청일은 지급일보다 앞당겨질 수 없습니다.");
+    return;
+  }
+
+  const productCfg = productsConfig[p];
+  const endDate = new Date(productCfg.end);
+
+  // 其它渠道
+  if (c === "other") {
+    const pol = policies.other.all;
+    document.getElementById('output').innerHTML =
+      buildSections(pol.policy, pol.process, pol.script, pol.reject, pol.afterEvent, 'other');
+    document.getElementById('output').style.display = 'block';
+    return;
+  }
+
+  // 活动结束
+  if (payDate.getTime() > endDate.getTime() || applyDate.getTime() > endDate.getTime()) {
+    const pol = policies.official.endEvent;
+    document.getElementById('output').innerHTML =
+      buildSections(pol.policy, pol.process, pol.script, pol.reject, pol.afterEvent, 'endEvent');
+    document.getElementById('output').style.display = 'block';
+    return;
+  }
+
+  // 正常周期
+  const diffDays = Math.floor((applyDate.getTime() - payDate.getTime()) / (1000 * 60 * 60 * 24));
+  let pol, type;
+  if (diffDays <= 14) {
+    pol = policies.official.within14;
+    type = 'within14';
+  } else if (diffDays <= 30) {
+    pol = policies.official.day15to30;
+    type = 'day15to30';
+  } else {
+    pol = policies.official.over30;
+    type = 'over30';
+  }
+
+  document.getElementById('output').innerHTML =
+    buildSections(pol.policy, pol.process, pol.script, pol.reject, pol.afterEvent, type);
+  document.getElementById('output').style.display = 'block';
+}
+
+function showPriceProtection(){
+  document.getElementById("pricePage").style.display = "block";
+  document.getElementById("faqPage").style.display = "none";
+  document.getElementById("exceptionPage").style.display = "none";
+}
+
+function showFAQ(){
+  document.getElementById("pricePage").style.display = "none";
+  document.getElementById("faqPage").style.display = "block";
+  document.getElementById("exceptionPage").style.display = "none";
+}
+
+function showException(){
+  document.getElementById("pricePage").style.display = "none";
+  document.getElementById("faqPage").style.display = "none";
+  document.getElementById("exceptionPage").style.display = "block";
+}
+
+
+
+function hideModal(id){ document.getElementById(id).style.display = "none"; }
+
+function renderFAQContent(){
+  const val = document.getElementById("faqSelect").value;
+  document.getElementById("faqContent").innerText = val ? faqData[val] : "";
+}
+
+// 选场景时刷新问题列表
+document.getElementById("exceptionScene").addEventListener("change", function() {
+  updateIssueOptions();          // 更新问题选项
+  renderExceptionContent();      // 显示场景文字或对应内容
+});
+
+// 选问题时显示内容
+document.getElementById("exceptionIssue").addEventListener("change", function() {
+  renderExceptionContent();
+});
+
+// 根据选中的场景生成该场景下的问题
+function updateIssueOptions() {
+  const scene = document.getElementById("exceptionScene").value;
+  const issueSelect = document.getElementById("exceptionIssue");
+
+  // 先清空选项
+  issueSelect.innerHTML = '<option value="">선택해주세요</option>';
+
+  if (!scene || !exceptionData[scene]) return;
+
+  // 根据场景生成简短标题 + 悬停提示
+  Object.keys(exceptionData[scene]).forEach(issueKey => {
+    const option = document.createElement("option");
+    option.value = issueKey;
+
+    // 简短标题
+    if (scene === "systemError" && issueKey === "priceDrop") {
+      option.textContent = "1. 즉시 할인 관련";
+      option.title = "고객이 행사 기간 중에 주문을 생성했으나, 행사가 종료된 이후 주문서에 표시된 결제 유효기간 내에는 결제를 완료할 수 없는 상황입니다.(은행 송금은 가능) 행사 종료 후에도 행사 가격으로 구매 요청하는 사례";
+    }
+    if (scene === "systemError" && issueKey === "giftMissing") {
+      option.textContent = "2. 증정 행사 관련";
+      option.title = "행사 기간 중 주문했으나 행사 종료 후 결제했더니 사은품이 주문에 포함되지 않은 상황. 고객이 사은품 보충 요청하는 사례";
+    }
+    if (scene === "paymentError" && issueKey === "paymentFail") {
+      option.textContent = "결제 오류";
+      option.title = "카드 승인 지연 또는 결제 시스템 오류로 인해 결제가 실패한 경우. 고객이 행사 가격 또는 사은품 제공을 요구하는 사례";
+    }
+
+    issueSelect.appendChild(option);
+  });
+}
+
+// 渲染异常处理方案
+function renderExceptionContent() {
+  const scene = document.getElementById("exceptionScene").value;
+  const issue = document.getElementById("exceptionIssue").value;
+
+  if (scene && issue && exceptionData[scene] && exceptionData[scene][issue]) {
+    const data = exceptionData[scene][issue];
+    document.getElementById("exceptionContent").innerHTML =
+      `<strong>처리 방안:</strong><br>${data.process}<br><br>
+       <strong>처리 방향 및 참고 화법:</strong><br>${data.script}`;
+    document.getElementById("grayTemplate").innerText = data.gray;
+  } else if (scene && !issue) {
+    // 只选场景时显示场景文字
+    const sceneText = document.getElementById("exceptionScene").selectedOptions[0].text;
+    document.getElementById("exceptionContent").innerHTML =
+      `<strong>선택한 상황:</strong> ${sceneText}`;
+    document.getElementById("grayTemplate").innerText = "";
+
+
+
+  } else {
+    document.getElementById("exceptionContent").innerHTML = "";
+    document.getElementById("grayTemplate").innerText = "[그레이드 템플릿 표시 영역]";
+  }
+}
+
+function showException(){
+  document.getElementById("pricePage").style.display = "none";
+  document.getElementById("faqPage").style.display = "none";
+  document.getElementById("exceptionPage").style.display = "block";
+}
+
+
+function buildSections(policy, process, script, reject, afterEvent, type){
+  return `
+    <div class="section policy"><div class="section-title">가격보장 정책</div>${policy}</div>
+    <div class="section process"><div class="section-title">처리 방안 / 대응 방안</div>${process}
+    <div style="margin-top:10px;font-weight:bold;">참고 문구</div>${script}</div>
+    <div class="section reject"><div class="section-title">고객이 관련 방안 또는 정책 설명을 받아들이지 않는 경우</div>${reject}</div>
+    ${(type === 'endEvent' && afterEvent) ? 
+        `<div class="section afterEvent"><div class="section-title">이벤트 시간 종료 후</div>${afterEvent}</div>` 
+        : ''}
+  `;
+}
+</script>
+</body>
+</html>
